@@ -30,6 +30,7 @@ function doGet() {
 
 /**
  * មុខងារទាញយកបញ្ជីឈ្មោះសិស្សទាំងអស់សម្រាប់ដាក់ក្នុង Dropdown
+ * Mapping ផ្អែកលើរូបភាព: Col A=ID, Col B=នាមខ្លួន, Col C=គោត្តនាម
  */
 function getAllStudents() {
   var sheetName = "តារាងពិនិត្យឈ្មោះសិស្ស"; 
@@ -39,7 +40,7 @@ function getAllStudents() {
   if (!sheet) return [];
 
   var lastRow = sheet.getLastRow();
-  if (lastRow < 10) return []; // ប្រសិនបើគ្មានទិន្នន័យពីជួរទី ១០ ចុះក្រោម
+  if (lastRow < 10) return []; 
 
   var range = sheet.getRange(10, 1, lastRow - 9, 9);
   var values = range.getValues();
@@ -47,7 +48,7 @@ function getAllStudents() {
 
   for (var i = 0; i < values.length; i++) {
     var row = values[i];
-    if (row[0]) { // បើមាន ID/ លេខរៀង
+    if (row[0]) { // បើមាន ID / លេខរៀង
       students.push({
         id: row[0],         // លេខរៀង (ID) នៅ Column A
         firstName: row[1],  // នាមខ្លួន Column B
@@ -60,6 +61,8 @@ function getAllStudents() {
 
 /**
  * មុខងារទាញយកព័ត៌មានលម្អិតរបស់សិស្សម្នាក់តាមរយៈ ID (លេខរៀង)
+ * Mapping ផ្អែកលើរូបភាព: 
+ * A: ID, B: នាមខ្លួន, C: គោត្តនាម, D: ភូមិ, E: ឃុំ/សង្កាត់, F: ស្រុក/ខណ្ឌ, G: រាជធានី/ខេត្ត, H: លេខទូរស័ព្ទ, I: ប្រព័ន្ធទូរស័ព្ទ
  */
 function getStudentById(studentId) {
   var sheetName = "តារាងពិនិត្យឈ្មោះសិស្ស"; 
@@ -81,12 +84,12 @@ function getStudentById(studentId) {
         id: row[0],
         firstName: row[1] || "",
         lastName: row[2] || "",
-        province: row[3] || "កំពង់ចាម",
-        district: row[4] || "",       
-        commune: row[5] || "",        
-        village: row[6] || "",        
-        phone: row[7] || "",          
-        network: row[8] || ""         
+        village: row[3] || "",       // Column D
+        commune: row[4] || "",       // Column E
+        district: row[5] || "",      // Column F
+        province: row[6] || "កំពង់ចាម", // Column G
+        phone: row[7] || "",         // Column H
+        network: row[8] || ""        // Column I
       };
     }
   }
@@ -94,7 +97,7 @@ function getStudentById(studentId) {
 }
 
 /**
- * មុខងារសម្រាប់ទទួលទិន្នន័យពី Form ហើយបញ្ចូលទៅកាន់ Google Sheet
+ * មុខងារសម្រាប់ទទួលទិន្នន័យពី Form ហើយបញ្ចូលទៅកាន់ Google Sheet (Save)
  */
 function saveStudent(data) {
   var sheetName = "តារាងពិនិត្យឈ្មោះសិស្ស"; 
@@ -102,11 +105,10 @@ function saveStudent(data) {
   var sheet = ss.getSheetByName(sheetName);
   
   if (!sheet) {
-    throw new Error("រកមិនឃើញ Sheet ដែលមានឈ្មោះ '" + sheetName + "' ទេ។ សូមពិនិត្យមើលឈ្មោះឡើងវិញ!");
+    throw new Error("រកមិនឃើញ Sheet ដែលមានឈ្មោះ '" + sheetName + "' ទេ។");
   }
   
   var lastRow = sheet.getLastRow();
-  // កែតម្រូវការគណនា ID ស្វ័យប្រវត្តិឱ្យបានត្រឹមត្រូវ
   var autoId = 1;
   if (lastRow >= 10) {
     var existingIds = sheet.getRange(10, 1, lastRow - 9, 1).getValues();
@@ -118,16 +120,17 @@ function saveStudent(data) {
     autoId = maxId + 1;
   }
 
+  // រៀបចំលំដាប់ទិន្នន័យឱ្យត្រូវគ្នានឹង Column A ដល់ I ក្នុង Sheet របស់អ្នក
   var rowData = [
-    autoId,
-    data.firstName || "",
-    data.lastName || "",
-    data.province || "",
-    data.district || "",
-    data.commune || "",
-    data.village || "",
-    data.phone || "",
-    data.network || ""
+    autoId,                 // A: ID
+    data.firstName || "",   // B: នាមខ្លួន
+    data.lastName || "",    // C: គោត្តនាម
+    data.village || "",     // D: ភូមិ
+    data.commune || "",     // E: ឃុំ / សង្កាត់
+    data.district || "",    // F: ស្រុក / ក្រុង / ខណ្ឌ
+    data.province || "",    // G: រាជធានី / ខេត្ត
+    data.phone || "",       // H: លេខទូរស័ព្ទ
+    data.network || ""      // I: ប្រព័ន្ធទូរស័ព្ទ
   ];
 
   sheet.appendRow(rowData);
@@ -156,14 +159,14 @@ function updateStudent(data) {
     if (values[i][0] == data.id) {
       var rowIndex = 10 + i; 
       
-      sheet.getRange(rowIndex, 2).setValue(data.firstName || "");
-      sheet.getRange(rowIndex, 3).setValue(data.lastName || "");
-      sheet.getRange(rowIndex, 4).setValue(data.province || "");
-      sheet.getRange(rowIndex, 5).setValue(data.district || "");
-      sheet.getRange(rowIndex, 6).setValue(data.commune || "");
-      sheet.getRange(rowIndex, 7).setValue(data.village || "");
-      sheet.getRange(rowIndex, 8).setValue(data.phone || "");
-      sheet.getRange(rowIndex, 9).setValue(data.network || "");
+      sheet.getRange(rowIndex, 2).setValue(data.firstName || ""); // Column B
+      sheet.getRange(rowIndex, 3).setValue(data.lastName || "");  // Column C
+      sheet.getRange(rowIndex, 4).setValue(data.village || "");   // Column D
+      sheet.getRange(rowIndex, 5).setValue(data.commune || "");   // Column E
+      sheet.getRange(rowIndex, 6).setValue(data.district || "");  // Column F
+      sheet.getRange(rowIndex, 7).setValue(data.province || "");  // Column G
+      sheet.getRange(rowIndex, 8).setValue(data.phone || "");     // Column H
+      sheet.getRange(rowIndex, 9).setValue(data.network || "");   // Column I
       
       return "Updated successfully";
     }
