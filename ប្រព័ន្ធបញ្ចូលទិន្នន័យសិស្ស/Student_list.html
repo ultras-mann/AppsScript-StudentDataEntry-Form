@@ -381,31 +381,26 @@
 
             if (province && district && commune && cambodiaData[province][district][commune]) {
                 let villages = cambodiaData[province][district][commune];
-                villages.forEach(vill => {
+                villages.forEach(vil => {
                     let option = document.createElement('option');
-                    option.value = vill;
-                    option.textContent = vill;
+                    option.value = vil;
+                    option.textContent = vil;
                     villageSelect.appendChild(option);
                 });
             }
         }
 
         function loadStudentListDropdown() {
-            google.script.run
-                .withSuccessHandler(function(students) {
-                    const select = document.getElementById('updateStudentSelect');
-                    select.innerHTML = '<option value="">-- បញ្ចូលសិស្សថ្មី (ទម្រង់ទទេ) --</option>';
-                    students.forEach(function(stu) {
-                        let option = document.createElement('option');
-                        option.value = stu.id;
-                        option.textContent = `[ID: ${stu.id}] ${stu.lastName} ${stu.firstName}`;
-                        select.appendChild(option);
-                    });
-                })
-                .withFailureHandler(function(err) {
-                    console.error("Error loading students:", err.message);
-                })
-                .getAllStudents();
+            google.script.run.withSuccessHandler(function(students) {
+                const select = document.getElementById('updateStudentSelect');
+                select.innerHTML = '<option value="">-- បញ្ចូលសិស្សថ្មី (ទម្រង់ទទេ) --</option>';
+                students.forEach(s => {
+                    let option = document.createElement('option');
+                    option.value = s.id;
+                    option.textContent = `[ID: ${s.id}] ${s.firstName} ${s.lastName}`;
+                    select.appendChild(option);
+                });
+            }).getAllStudents();
         }
 
         function onStudentSelectChange() {
@@ -415,7 +410,6 @@
             const deleteBtn = document.getElementById('deleteBtn');
 
             if (!studentId) {
-                // Reset form for new entry
                 document.getElementById('studentForm').reset();
                 document.getElementById('province').value = "កំពង់ចាម";
                 loadDistricts();
@@ -425,38 +419,32 @@
                 return;
             }
 
-            // Show loading or fetch student details
-            google.script.run
-                .withSuccessHandler(function(student) {
-                    if (student) {
-                        document.getElementById('firstName').value = student.firstName;
-                        document.getElementById('lastName').value = student.lastName;
-                        document.getElementById('province').value = student.province || "កំពង់ចាម";
-                        loadDistricts();
-                        document.getElementById('district').value = student.district;
-                        loadCommunes();
-                        document.getElementById('commune').value = student.commune;
-                        loadVillages();
-                        document.getElementById('village').value = student.village;
-                        document.getElementById('phone').value = student.phone;
-                        document.getElementById('network').value = student.network;
+            submitBtn.style.display = "none";
+            updateBtn.style.display = "flex";
+            deleteBtn.style.display = "flex";
 
-                        submitBtn.style.display = "none";
-                        updateBtn.style.display = "flex";
-                        deleteBtn.style.display = "flex";
-                    }
-                })
-                .withFailureHandler(function(err) {
-                    showAlert(err.message, "error");
-                })
-                .getStudentById(studentId);
+            google.script.run.withSuccessHandler(function(student) {
+                if (student) {
+                    document.getElementById('firstName').value = student.firstName;
+                    document.getElementById('lastName').value = student.lastName;
+                    document.getElementById('province').value = student.province;
+                    loadDistricts();
+                    document.getElementById('district').value = student.district;
+                    loadCommunes();
+                    document.getElementById('commune').value = student.commune;
+                    loadVillages();
+                    document.getElementById('village').value = student.village;
+                    document.getElementById('phone').value = student.phone;
+                    document.getElementById('network').value = student.network;
+                }
+            }).getStudentById(studentId);
         }
 
         function handleFormSubmit(event) {
             event.preventDefault();
-            toggleLoading(true);
+            setLoading(true, "กำลังบันทึก...");
 
-            const formData = {
+            const data = {
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
                 province: document.getElementById('province').value,
@@ -468,27 +456,28 @@
             };
 
             google.script.run
-                .withSuccessHandler(function(res) {
-                    toggleLoading(false);
-                    showAlert("បានរក្សាទុកទិន្នន័យដោយជោគជ័យ!", "success");
+                .withSuccessHandler(function(response) {
+                    setLoading(false);
+                    showAlert("បានរក្សាទុកដោយជោគជ័យ!", "success");
                     document.getElementById('studentForm').reset();
                     document.getElementById('province').value = "កំពង់ចាម";
                     loadDistricts();
                     loadStudentListDropdown();
                 })
-                .withFailureHandler(function(err) {
-                    toggleLoading(false);
-                    showAlert(err.message, "error");
+                .withFailureHandler(function(error) {
+                    setLoading(false);
+                    showAlert("កំហុស: " + error.message, "error");
                 })
-                .saveStudent(formData);
+                .saveStudent(data);
         }
 
         function handleUpdate() {
             const studentId = document.getElementById('updateStudentSelect').value;
             if (!studentId) return;
 
-            toggleLoading(true);
-            const formData = {
+            setLoading(true, "กำลังอัปเดต...");
+
+            const data = {
                 id: studentId,
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
@@ -501,16 +490,16 @@
             };
 
             google.script.run
-                .withSuccessHandler(function(res) {
-                    toggleLoading(false);
+                .withSuccessHandler(function(response) {
+                    setLoading(false);
                     showAlert("បានកែប្រែទិន្នន័យដោយជោគជ័យ!", "success");
                     loadStudentListDropdown();
                 })
-                .withFailureHandler(function(err) {
-                    toggleLoading(false);
-                    showAlert(err.message, "error");
+                .withFailureHandler(function(error) {
+                    setLoading(false);
+                    showAlert("កំហុស: " + error.message, "error");
                 })
-                .updateStudent(formData);
+                .updateStudent(data);
         }
 
         function handleDelete() {
@@ -519,45 +508,52 @@
 
             if (!confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យសិស្សនេះមែនទេ?")) return;
 
-            toggleLoading(true);
+            setLoading(true, "กำลังลบ...");
+
             google.script.run
-                .withSuccessHandler(function(res) {
-                    toggleLoading(false);
-                    showAlert("បានលុបទិន្នន័យដោយជោគជ័យ!", "success");
+                .withSuccessHandler(function(response) {
+                    setLoading(false);
+                    showAlert("បានលុបដោយជោគជ័យ!", "success");
                     document.getElementById('studentForm').reset();
                     document.getElementById('province').value = "កំពង់ចាម";
                     loadDistricts();
                     loadStudentListDropdown();
-                    
-                    // Reset buttons
-                    document.getElementById('submitBtn').style.display = "flex";
-                    document.getElementById('updateBtn').style.display = "none";
-                    document.getElementById('deleteBtn').style.display = "none";
+                    onStudentSelectChange();
                 })
-                .withFailureHandler(function(err) {
-                    toggleLoading(false);
-                    showAlert(err.message, "error");
+                .withFailureHandler(function(error) {
+                    setLoading(false);
+                    showAlert("កំហុស: " + error.message, "error");
                 })
                 .deleteStudent(studentId);
         }
 
-        function toggleLoading(isLoading) {
-            const btnText = document.getElementById('btnText');
+        function setLoading(isLoading, text = "រក្សាទុក (Save)") {
+            const submitBtn = document.getElementById('submitBtn');
+            const updateBtn = document.getElementById('updateBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
             const spinner = document.getElementById('loadingSpinner');
+            const btnText = document.getElementById('btnText');
+
             if (isLoading) {
-                btnText.style.display = 'none';
-                spinner.style.display = 'block';
+                submitBtn.disabled = true;
+                updateBtn.disabled = true;
+                deleteBtn.disabled = true;
+                spinner.style.display = "block";
+                btnText.style.opacity = "0.7";
             } else {
-                btnText.style.display = 'inline';
-                spinner.style.display = 'none';
+                submitBtn.disabled = false;
+                updateBtn.disabled = false;
+                deleteBtn.disabled = false;
+                spinner.style.display = "none";
+                btnText.style.opacity = "1";
             }
         }
 
         function showAlert(message, type) {
             const alertBox = document.getElementById('alert-box');
             alertBox.textContent = message;
-            alertBox.style.display = 'block';
             alertBox.className = type === 'success' ? 'alert-success' : 'alert-error';
+            alertBox.style.display = 'block';
             setTimeout(() => {
                 alertBox.style.display = 'none';
             }, 4000);
