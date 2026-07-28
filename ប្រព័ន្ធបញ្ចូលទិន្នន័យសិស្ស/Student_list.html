@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ប្រព័ន្ធបញ្ចូលទិន្នន័យសិស្ស - ខេត្តកំពង់ចាម</title>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --success-color: #10b981;
+            --success-hover: #059669;
+            --update-color: #f59e0b;
+            --update-hover: #d97706;
+            --delete-color: #ef4444;
+            --delete-hover: #dc2626;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #cbd5e1;
+            --focus-ring: rgba(79, 70, 229, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Battambang', serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding: 10px; }
+        .container { width: 100%; max-width: 900px; margin: 0 auto; background: var(--card-bg); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; }
+        .form-header { background: linear-gradient(135deg, #4f46e5, #6366f1); color: #ffffff; padding: 15px; text-align: center; }
+        .form-header h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+        .form-header p { font-size: 13px; opacity: 0.9; }
+        form { padding: 20px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: span 2; }
+        label { font-size: 13px; font-weight: 500; color: var(--text-color); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+        label i { color: var(--primary-color); }
+        input, select { width: 100%; padding: 10px 14px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 8px; outline: none; background-color: #fff; transition: all 0.3s ease; }
+        input:focus, select:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--focus-ring); }
+
+        .action-buttons-group { grid-column: span 2; display: flex; justify-content: space-between; align-items: center; margin-top: 5px; gap: 10px; }
+        .left-actions { display: flex; gap: 10px; }
+        
+        .btn-action { padding: 12px 20px; font-size: 14px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; transition: background-color 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; color: white; }
+        .btn-submit { background-color: var(--success-color); }
+        .btn-submit:hover { background-color: var(--success-hover); }
+        .btn-update { background-color: var(--update-color); display: none; } 
+        .btn-update:hover { background-color: var(--update-hover); }
+        .btn-delete { background-color: var(--delete-color); display: none; } 
+        .btn-delete:hover { background-color: var(--delete-hover); }
+
+        .spinner { display: none; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #alert-box { display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; text-align: center; grid-column: span 2; }
+        .alert-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+        .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="form-header">
+            <h2>បញ្ជីឈ្មោះសិស្ស (ខេត្តកំពង់ចាម)</h2>
+            <p>សូមបញ្ចូល ឬជ្រើសរើសព័ត៌មានសិស្សសម្រាប់កែប្រែខាងក្រោម</p>
+        </div>
+
+        <form id="studentForm" onsubmit="handleFormSubmit(event)">
+            <div class="form-grid">
+                <div id="alert-box"></div>
+
+                <!-- ជ្រើសរើសសិស្សសម្រាប់កែប្រែ -->
+                <div class="form-group full-width">
+                    <label for="updateStudentSelect"><i class="fa-solid fa-user-pen"></i> ជ្រើសរើសឈ្មោះសិស្សសម្រាប់កែប្រែ</label>
+                    <select id="updateStudentSelect" onchange="onStudentSelectChange()">
+                        <option value="">-- បញ្ចូលសិស្សថ្មី (ទម្រង់ទទេ) --</option>
+                    </select>
+                </div>
+
+                <!-- នាមខ្លួន -->
+                <div class="form-group">
+                    <label for="firstName"><i class="fa-solid fa-user"></i> នាមខ្លួន</label>
+                    <input type="text" id="firstName" name="firstName" placeholder="បញ្ចូលនាមខ្លួន" required>
+                </div>
+
+                <!-- គោត្តនាម -->
+                <div class="form-group">
+                    <label for="lastName"><i class="fa-solid fa-user-tag"></i> គោត្តនាម</label>
+                    <input type="text" id="lastName" name="lastName" placeholder="បញ្ចូលគោត្តនាម" required>
+                </div>
+
+                <!-- រាជធានី / ខេត្ត -->
+                <div class="form-group">
+                    <label for="province"><i class="fa-solid fa-earth-asia"></i> រាជធានី / ខេត្ត</label>
+                    <select id="province" name="province" onchange="loadDistricts()" required>
+                        <option value=""> ជ្រើសរើសរាជធានី / ខេត្ត </option>
+                    </select>
+                </div>
+
+                <!-- ស្រុក / ក្រុង / ខណ្ឌ -->
+                <div class="form-group">
+                    <label for="district"><i class="fa-solid fa-city"></i> ស្រុក / ក្រុង / ខណ្ឌ</label>
+                    <select id="district" name="district" onchange="loadCommunes()" required>
+                        <option value=""> សូមជ្រើសរើសខេត្តមុនសិន </option>
+                    </select>
+                </div>
+
+                <!-- ឃុំ / សង្កាត់ -->
+                <div class="form-group">
+                    <label for="commune"><i class="fa-solid fa-map"></i> ឃុំ / សង្កាត់</label>
+                    <select id="commune" name="commune" onchange="loadVillages()" required>
+                        <option value=""> សូមជ្រើសរើសស្រុក/ខណ្ឌមុនសិន </option>
+                    </select>
+                </div>
+
+                <!-- ភូមិ -->
+                <div class="form-group">
+                    <label for="village"><i class="fa-solid fa-map-pin"></i> ភូមិ</label>
+                    <select id="village" name="village" required>
+                        <option value=""> សូមជ្រើសរើសឃុំ/សង្កាត់មុនសិន </option>
+                    </select>
+                </div>
+
+                <!-- លេខទូរស័ព្ទ -->
+                <div class="form-group">
+                    <label for="phone"><i class="fa-solid fa-phone"></i> លេខទូរស័ព្ទ</label>
+                    <input type="tel" id="phone" name="phone" placeholder="ឧ. 012345678">
+                </div>
+
+                <!-- ប្រព័ន្ធទូរស័ព្ទ -->
+                <div class="form-group">
+                    <label for="network"><i class="fa-solid fa-network-wired"></i> ប្រព័ន្ធទូរស័ព្ទ</label>
+                    <select id="network" name="network">
+                        <option value=""> ជ្រើសរើសប្រព័ន្ធ </option>
+                        <option value="Cellcard">Cellcard</option>
+                        <option value="Smart">Smart</option>
+                        <option value="Metfone">Metfone</option>
+                        <option value="Seatel">Seatel</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons-group">
+                    <div class="left-actions">
+                        <button type="button" id="updateBtn" class="btn-action btn-update" onclick="handleUpdate()">
+                            <i class="fa-solid fa-pen-to-square"></i> កែប្រែ
+                        </button>
+                        <button type="button" id="deleteBtn" class="btn-action btn-delete" onclick="handleDelete()">
+                            <i class="fa-solid fa-trash"></i> លុប
+                        </button>
+                    </div>
+                    <button type="submit" class="btn-action btn-submit" id="submitBtn">
+                        <span id="btnText">រក្សាទុក (Save)</span>
+                        <div class="spinner" id="loadingSpinner"></div>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const cambodiaData = {
+            "កំពង់ចាម": {
+                "កំពង់ចាម": { 
+                    "បឹងកុក": ["ចុងថ្នល់ទី១", "ចុងថ្នល់ទី២", "ឡឥដ្ឋ", "មេម៉ាយ", "បឹងកុកទី១", "បឹងកុកទី២", "ជ្រោយថ្ម"], 
+                    "កំពង់ចាម": ["ទី១៣", "ទី៩", "ទី១២", "ទី៨", "ទី១៤", "ទី៧", "ទី១១", "ទី១៥", "ទី១០"],
+                    "សំបួរមាស": ["នាងគង្ហីង", "ព្រែកដើមចាន់", "រកាក្រោម", "រកាលើ", "បឹងស្នាយ", "ចំការខ្ពប", "កំពង់រលីង", "បឹងបាសាក់", "ភូមិព្រែកជីក", "ភូមិតាណេង"],
+                    "វាលវង់": ["វាលវង់", "ទី១", "ទី៦", "ទី២", "ទី៥", "ទី៤", "ទី៣"]
+                },
+                "បាធាយ": { 
+                    "បាធាយ": ["ស្វាយពក", "ជ្រែក", "ស្រះព្រីង", "អូរម៉ាល់", "ទួល", "បាធាយ"], 
+                    "ច្បារអំពៅ": ["ច្បារអំពៅ", "ទួលចាន់", "ស្ទឹងឆ្វេង", "អន្លង់ជ្រៃ"],
+                    "ជាលា": ["ជាលា", "តាំងក្រាំង", "ភ្នំធំ", "តាង៉ិល", "បែកពាង"], 
+                    "ជើងព្រៃ": ["ត្របែក", "ប្រសូត្រ(ក)", "ប្រសូត្រ(ខ)", "ត្រយ៉ងពង", "អណ្តូងស្នាយ", "ជើងព្រៃ"],
+                    "មេព្រីង": ["តាំងស្រី", "មេព្រីង", "តាំងថ្លើង", "តាំងរលាង", "ព្រៃកោ"], 
+                    "ផ្អាវ": ["ព្រៃញា", "សំរោង", "តាំងបឹង", "កណ្តោល", "បាកាល", "ផ្អាវ"],
+                    "សំបូរ": ["សង្កើប", "តាបែក", "តាពយ", "វាល", "បាលាំង", "ចុង", "សំបូរ"], 
+                    "សណ្តែក": ["តាំងជ្រៃ", "កប៉ាល់", "ពោធិស្ទៀង", "ស្វាយព្រៃ", "ស្រឹង្គ"],
+                    "តាំងក្រាំង": ["ជើងឆ្នុក", "អកទៀង", "កំពង់ព្រះ", "ភ្នំដិល", "តាំងគោក", "ពពិត", "ប្រាសាទ", "ត្បូងភ្នំ"], 
+                    "តាំងក្រសាំង": ["ក្រដាស់(ក)", "ក្រដាស់(ខ)", "ខ្វិត", "ត្រាវភ្នី", "ស្តុកធំ", "បឹងវែង", "បឹង", "ជីនាង", "ចាន់", "ខ្ទុំ"],
+                    "ត្រប់": ["ចាន់គង់", "ពោធិឫស្សី", "ត្រប់", "រោងដំរី", "កំពោត", "ភ្នំតូង", "ថ្មី", "ថ្មកែវ", "ទំព្រង", "ថ្កូវ", "រោធ"],
+                    "ទំនប់": ["ប្រយុក", "ទំនប់លើ", "ដូនប៉ែន", "រូង", "ប្រសាំ", "ត្រពាំងស្នោ", "ស្រឹង្គ"]
+                },
+                "ចំការលើ": { 
+                    "បុសខ្នុរ": ["បុសខ្នុរ", "វាលធ្នង់", "១០មករា", "សាមគ្គី", "ដូនធី", "ច្រណោម", "ចំការកប្បាស", "35", "ប្រសើរ", "ថ្លុកក្រវាន់", "សារាយ"], 
+                    "ចំការអណ្តូង": ["ចំការអណ្តូង", "សូរជៃ", "លេខ១", "ស្រោងចាន់", "សហគ្រាស", "លេខ១១", "សហគ្រាន់", "ប្រើសមាស", "ជាំជ្រៃ", "អូរក្រវាន់", "ដូនបុស្ស", "ស្វាយជួរ", "តាប៉ុម", "33", "22", "លេខ ២", "រោងចក្រ", "ក្រុមហ៊ុន"],
+                    "ជយោ" : ["ស្ពឺ(ក)", "ជយោ", "ត្រពាំងល្ពៅ", "អូរប៉ិះ", "ត្រពាំងឫស្សី"],
+                    "ល្វាលើ" : ["ល្វាជើង", "ល្វាត្បូង", "បី", "ក្បាលហុងថ្មី", "ក្បាលហុងចាស់", "ក្រឡែងលិច", "ក្រឡែងកើត"],
+                    "ស្ពឺ" : ["ពព្រេង", "ពែងមាសត្បូង", "ពែងមាសជើង", "វាល", "អូរវាយ", "ស្ពឺកើត", "ស្ពឺលិច", "បន្ទាយជ័យ"],
+                    "ស្វាយទាប" : ["វាលរីលិច", "វាលរីកើត", "តាំងក្រង់", "អូរដា", "ប្រមាត់ដី", "ព្រឹក្ស៧៧", "ព្រឹក្ស", "ថ្នល់បែកកើត", "ថ្នល់បែកលិច", "មហា", "ត្រពាំងបេង", "ស្រែពាល", "បុសថ្លាន់", "ត្រពាំងព្រីង", "អូរស្វាយ"],
+                    "តាអុង": ["តាអុង", "ទួលមាស", "ទួលប្រាក់", "33", "32", "31", "30", "34", "ទួលប៉ែន", "ចំរើនផល", "ត្រពាំងឈូក", "សំព័រ", "ទួលស្រូវ"],
+                    "តាប្រុក" : ["ស្រែប្រាំង", "រំចេក", "ផ្លាក", "នាងលើង", "អូរតាសែង", "ឈូក", "អូរអំបិល"]
+                },
+                "ជើងព្រៃ": { 
+                    "ខ្សាច់ប្រែ": ["ខ្សាច់ប្រែ", "ព្រែកពពែ"], 
+                    "ផ្អាវ": ["ផ្អាវ", "ត្រពាំងគរ"],
+                    "ពេជ្រម្ដាយ": ["ពេជ្រម្ដាយ", "ស្រែចែង"],
+                    "សូគង": ["សូគង", "បឹងកុក"],
+                    "ស្តើងចាន់": ["ស្តើងចាន់", "កណ្ដោលជ្រុំ"],
+                    "ទ្រព្យ": ["ទ្រព្យ", "ពងទឹក"],
+                    "ខ្នុរដំបង": ["ខ្នុរដំបង", "រវៀង", "វាល"],
+                    "គោករវៀង": ["គោករវៀង", "ឈូក", "បាគ្រង"],
+                    "ទទោល": ["ទទោល", "ផ្តៅជុំ", "ផ្តៅជុំកើត", "ផ្តៅជុំលិច", "ឈើទាល"],
+                    "ចំអនាង": ["ចំអនាង", "ព្រៃចារ", "សៀមបាយ", "ព្រៃចារក្រៅ", "ព្រៃចារក្នុង", "បាទី", "ព្នៅកើត", "ព្នៅលិច"],
+                    "ព្រីងជ្រំ": ["ព្រីងជ្រំ", "ត្រពាំងផ្អាវ", "ត្រពាំងទឹម", "កោះចំប៉ា", "តានី"]
+                },
+                "កងមាស": { 
+                    "អញ្ចាញរូង": ["អញ្ចាញរូង", "ប្រមាយ"], 
+                    "ជប់": ["ជប់", "ត្រពាំងផ្លុង"],
+                    "កងទី១": ["កងទី១", "ស្ពឺកងមាស"],
+                    "កងតាអ៊ីន": ["កងតាអ៊ីន", "ព្រែកកុយ"],
+                    "ស្រឡប់": ["ស្រឡប់", "ស្ដុក"],
+                    "អង្គរបាន": ["អង្គរបានទី១", "អង្គរបានទី២", "អង្គរបានទី៣", "អង្គរបានទី៤", "អង្គរបានទី៥", "អង្គរបានទី៦", "អង្គរបានទី៧", "អង្គរបានទី៨", "អង្គរបានទី៩"],
+                    "កងតាណឹង": ["កងតាណឹងទី១", "កងតាណឹងទី២", "កងតាណឹងទី៣", "កងតាណឹងទី៤", "កងតាណឹងទី៥", "កងតាណឹងទី៦", "កងតាណឹងទី៧", "កងតាណឹងទី៨", "កងតាណឹងទី៩"],
+                    "ខ្ចៅ": ["អូរពពេល", "វ៉ាវិន្ទទី១", "វ៉ាវិន្ទទី២", "វ៉ាវិន្ទទី៣", "ខ្ចៅទី១", "ខ្ចៅទី២", "ខ្ចៅទី៣", "ស្វាយព័ន្ធទី១", "ស្វាយព័ន្ធទី២", "ថ្លុកជ្រៅ"],
+                    "ពាមជីកង": ["ពាមជីកង", "សំបួរមាស(ក)", "សំបួរមាស(ខ)", "កោះតូច", "សាច់សូរ", "ដំណាក់ស្នាយ", "ដំណាក់ជ្រៃ"],
+                    "ព្រែកកុយ": ["គងជ័យ", "គោហ៊េរ", "មេសរ", "អូរស្វាយលិច", "អូរស្វាយកើត", "ព្រែកកុយ", "អន្លង់គគីរ"],
+                    "ព្រែកក្របៅ": ["ចំការឪឡឹក", "អណ្តូងដៃ", "ទឹកចេញ", "អូរកណ្តោល", "ព្រែកក្របៅ", "ព្រែកអណ្តូង", "ពាមក្នុង", "ពោធិសាលាទី១", "ពោធិសាលាទី២", "អណ្តូងតាអុង"],
+                    "រាយប៉ាយ": ["បឹងទទា", "គកក្របី", "ព្រែកប្រណាក", "រាយប៉ាយក្រោម", "ភូមិរាយប៉ាយកណ្ដាល", "រាយប៉ាយលើ", "ទួលវិហារ", "កន្លែងរុន", "ភូមិទួលបីទី១", "ភូមិទួលបីទី２", "ភូមិពោធិ៍មានជ័យ"],
+                    "រកាអារ": ["រកាអារ", "ស្វាយស្រណោះទី១", "ស្វាយស្រណោះទី២", "ជ្រោយក្របៅទី១", "ជ្រោយក្របៅទី២", "ព្រែកលីវទី១", "ព្រែកលីវទី២", "ព្រែកលីវទី៣", "ព្រែកលីវទី៤"],
+                    "រកាគយ": ["ថ្មីក", "ថ្មីខ", "រកាគយខ", "ដំណាក់ល្អិត", "ស្វាយតាហែន", "ពង្រ"],
+                    "ស្តៅ": ["អន្លង់គគីរ", "ល្វាលើ", "ល្វាក្រោម", "ខ្ពបលើ", "ខ្ពបក្រោម", "ស្តៅ"],
+                    "សូរគង": ["បឹងសាងខាងលិច", "បឹងសាងកើត", "អន្លង់អកលិច", "អន្លង់អកកើត", "ព្រែកក្រួសខាងលិច", "ភូមិព្រែកក្រួសខាងកើត", "បឹងត្រាវខាងជើង", "ភូមិបឹងត្រាវខាងត្បូង", "ក្តី", "កោះតាង៉ោទី១", "កោះតាង៉ោទី២", "កោះតាង៉ោទី៣", "សូរគេន"]
+                },
+                "កោះសូទិន": { 
+                    "ជង្រុក": ["ជង្រុក", "កោះមេសាយ"], 
+                    "កោះសូទិន": ["ទី១", "ទី២", "ទី៣", "ទី៤", "ទី៥", "ទី៦", "ទី៧", "ទី៨", "ទី៩", "ទី១០", "ទី១១", "ទី១២", "ទី១៣", "ទី១៤"],
+                    "មហាខ្ញូង": ["អង្គរជ័យក្រោម", "អង្គរជ័យលើ", "ខ្ពប", "មហាសៀកលើ", "មហាសៀកក្រោម", "កំពង់ចម្លង", "ខ្ញូងលើ", "កណ្តាលខ្ញូង", "ចុងខ្ញូង"],
+                    "ព្រែកទន្លាប់": ["ព្រែកទន្លាប់", "អន្លង់រមៀត"],
+                    "កំពង់រាប": ["កំពង់ស្តីលើ", "កំពង់ស្តីកណ្តាល", "កំពង់ស្តីក្រោម", "កំពង់ស្តីក្នុង", "កំពង់រាបក្រោម", "កំពង់រាបលើ", "កោះចិនក្រោម", "កោះចិនលើ"],
+                    "ល្វេ": ["ល្វេលើ", "ល្វេក្រោម", "រកាកោង", "ដំណាក់ស្វាយ", "ព្រែកគល់", "ទំពូង", "អំបែងចេះ", "ព្រែកចង្រ្កាន", "ព្រែកតាកែ", "បទស្រីទន្ទឹង"],
+                    "មហាលាភ": ["មហាលាភជើង", "មហាលាភត្បូង", "ចុងព្រែក", "រកាកោងត្បូង", "រកាកោងជើង", "ដំណាក់ព្រីងលិច", "ដំណាក់ព្រីងកើត", "ជ្រោយសសិត", "ព្រែក", "រត្នមុនី"],
+                    "ពាមប្រធ្នោះ": ["ក្រពើគម", "ទួលកំពត", "ប៉ាក់ណាម", "ទួលធាតុ", "ជីហែ", "សំរោង", "ថ្មី", "វាល", "ទូលក្តុល", "ពង្រ", "មហាលាភ", "ផ្សារថ្មី", "ពាម"],
+                    "ពង្រ": ["ព្រែករំដេងកើត", "ព្រែករំដេងលិច", "អន្លង់ដូង", "ប៉ាក់ណាម", "ពង្រកើត", "ពង្រលិច", "ដើមស្តៅ", "កំពង់ឪជ្រឹង"],
+                    "ព្រែកតានង់": ["ទី១", "ទី២", "ទី៣", "ទី៤", "ទី៥", "ទី៦", "ទី៧", "ទី៨", "ទី៩", "ទី១០", "ទី១១", "ទី១២", "ទី១៣"]
+                },
+                "ព្រៃឈរ": { 
+                    "បារាយណ៍": ["បារាយណ៍", "អូរម្រះ", "សំណាក់ត្បូង", "ត្រពាំងបេង", "លាងខ្សាច់", "រោងគោ", "ត្រពាំងបី", "ព្រៃខ្ជាយ", "គោកស្រឡៅ", "វត្តចាស់", "សំណាក់ជើង", "រោលជ្រូក", "ព្រៃរំដេង", "អូរកំបោរ", "ទួលចំបក់"], 
+                    "ឈូក": ["ឈូក", "កណ្ដោលជ្រុំ"],
+                    "ខ្វាវ": ["ខ្វាវ", "ថ្មី"],
+                    "ព្រៃឈរ": ["ព្រៃឈរ", "ត្នោតនុំ", "សេកយំ", "ជ្រេស", "សង្កែ"],
+                    "សូរ្យភី": ["សូរ្យភី", "រលួស"],
+                    "ត្នោត": ["ត្នោត", "អណ្ដូងចេក"],
+                    "សំពងជ័យ": ["សំពងជ័យ", "ស្វាយមាស", "បាខម", "ពោធិ", "ត្រពាំងឈុប", "បុស្សតាមុំ", "ត្រពាំងត្រុំ", "ត្រពាំងស្លា", "ចំបក់", "ដូន្តោ", "សណ្តែក", "កកោះ", "កុមារ", "អំពិលទ្វារ"],
+                    "ស្តើងជ័យ": ["ស្តើងជ័យ", "ដំណាក់អំពិល", "ពង្រ", "សង្កែ", "ប្របឹង", "ក្តុយ", "ខ្នារ"],
+                    "សូទិប": ["សូទិប", "ថ្មី", "ស្គន់", "បឹងជ្រោយ", "តាសែន", "ង៉ូង", "ដូនដុំ", "ប៉ាណា"],
+                    "ស្រម៉": ["ស្រម៉", "ត្រពាំងស្នោ", "ស្រាមអង្កាម", "ស្រាមកើត", "ស្រាមលិច", "ស្រាមជើង", "ក្រឡាញ់", "ត្រពាំងត្មាត", "ថ្មី", "ប្រខ្នោរ", "ប្រធាតុ", "សង្កែពង", "អណ្តូងត្រាំង"],
+                    "ត្រពាំងគរ": ["ត្រពាំងគរ", "ត្នោតបាក់", "ត្រពាំងថ្ម", "ក្ងោក", "ស្អាង", "អង្គ", "ប្រទេន", "ទម្ពរ", "កណ្តាល", "អារក្ស"],
+                    "បឹងណាយ": ["ថ្មដា", "ត្រពាំងធំ", "ឈូកស", "បឹងណាយ", "កុមារាជ", "ឈើបាក់", "តាអុក", "ត្រពាំងបិត", "ទួលខ្វាវ", "អ្នកតាស្ទឹង", "ថ្មគោល", "វត្តចាស់", "ប្រវ៉ាស់", "ត្រពាំងអញ្ចាញ", "ក្បាលដំរី", "ត្រើង", "ចន្លាត់ដៃ"],
+                    "ជ្រៃវៀន": ["ទួលតាកោ", "ដៃបួន", "ត្រពាំងព្នៅ", "តារាម", "ទឹកនឹម", "ត្រពាំងសង្កែ", "អូរកំបុត", "ជ្រៃវៀន", "ត្រពាំងអំពិល", "ខ្វិតតូច", "ទួលបាក់គាំ", "ក្លែងពណ៌", "ក្រឡោង", "បន្ទាយរឹង", "ត្រពាំងទូក", "ស្លែង", "ដូនដី", "ព្រៃទទឹង"],
+                    "ខ្វិតធំ": ["ខ្វិតធំ", "បារាយណ៍", "អំពិលធំ", "តាង៉ាល", "អង្គ្រង", "កប្បាស", "ប្រធាតុ", "ដង្កោ", "ស្វាយប៉ិន", "ក្រោយវត្ត", "រំដួល", "តាលៃ", "ដូនឡី", "តាកែវ", "តាមាស", "ម្រេញ", "ត្រពាំងពោន", "តាម៉ូត"],
+                    "ក្រូច": ["ក្រូច", "ថ្មី", "ក្រសាំងតាម៉ង់", "ទួលខ្ពស់", "អូរជ្រក", "ព្រៃសាក់", "សំរោង"],
+                    "ល្វា": ["ល្វា", "មេមាំង", "ស្តុកអន្ទង់", "គក", "គោកទ្រាកើត", "គោកទ្រាលិច", "តាំងត្រពាំង", "ត្រពាំងជីនាង", "តាំងគោក", "តាចាក់"],
+                    "មៀន": ["ទូលព្រិច", "កំពង់សំណាញ់", "មៀន", "ត្រពាំងឈូក", "ក្រសាំងពុល", "ត្រើង", "ទូលពោន", "ផ្កាយព្រឹក", "ឃ្លោយទី១", "ឃ្លោយទី២", "ឃ្លោយទី៣", "ឃ្លោយទី៤", "អូរសង្កែ", "កេះ", "ដីក្រហម", "ណាំកិន", "អូរតានៅ", "ដំណាក់ពង្រ", "កំពង់សំរិទ្ធិ"],
+                    "សូរ្យសែន": ["ចំបក់ថ្ម", "ស្វាយរ័ក្ស", "ត្រពាំងរាំង", "ត្រពាំងត្បាល់", "ត្រពាំងត្នោត", "ត្រើយអូរ", "សូរ្យសែន", "អណ្តូង"],
+                    "សំរោង": ["តាក្រឹក", "បន្ទាយថ្មី", "ថ្មី", "សំរោង", "ស្វាយព្រៃ", "សូដី", "ត្រពាំងឫស្សី", "ព្រៃខ្ជាយ", "កណ្តោលកោង", "ស្មេរ", "វាល"],
+                    "ស្រងែ": ["តាកុច", "ត្រពាំងរូង", "សេនសុនត្បូង", "សេនសុនជើង", "ស្រងែត្បូង", "ស្រងែជើង", "ត្រពាំងធំ", "តាសរ"],
+                    "ថ្មពូន": ["អណ្តូងតាពេជ្រ", "អូរតាថុក", "ថ្មពូនកណ្តាល", "លិចវត្ត", "ត្រាំង", "អណ្តូងផ្តៅ", "ត្រពាំងបឹង", "ទួលថ្ម", "អណ្តូងតាឡឹង"],
+                    "តុងរ៉ុង": ["តុងរ៉ុង", "ដូង", "គកកណ្តាល", "ទ្រមុខទី១", "ទ្រមុខទី២", "ផ្ទះខ្ពស់", "ប្រាសាទ", "ព្រះស្រុក", "សំរោង", "ធ្នង់"],
+                    "ត្រពាំងព្រះ": ["ព្រីងបីដើម", "ព្រៃស្រឡៅ", "ព្រៃស្រឡាញ", "កកោះ", "ខ្វាវ", "អង", "តាលន", "ត្រពាំងស្វាយ", "ដូង", "អូរដា", "ស្បែង", "ដីឡូតិ៍", "ត្រពាំងរាំង", "ត្រពាំងក្រសាំង", "ត្រពាំងល័ក្ខ", "រលួស", "ទួលអំពិល", "ចក", "គូរ", "កោះកាភេម", "ពួនប្រម៉ាត់", "កោះស្វាយ", "ទន្លេ ស", "អូរដូនញា"]
+                },
+                "ស្រីសន្ធរ": { 
+                    "ខ្សណ្ដ": ["ខ្សណ្ដ", "ទន្លេបិទ"], 
+                    "ព្រែកគោ": ["ព្រែកគោ", "បឹងចារ"],
+                    "ព្រែកដំបូក": ["ព្រែកដំបូក", "ស្ដៅ"],
+                    "ព្រែកពងទឹក": ["ព្រែកពងទឹក", "ពាមឧកញ៉ាអុង"],
+                    "ស្រីសន្ធរ": ["ស្រីសន្ធរ", "កោះសំរោង"],
+                    "បារាយណ៍": ["បន្ទាយ", "កំផ្លាក", "ស្យាបឹងវែង", "ស្យាអំពិល"],
+                    "ជីបាល": ["ខ្យោង", "ស្លែង", "ជីបាល", "តាំងក្រាំង", "ខ្នុរដូង"],
+                    "ខ្នារស": ["ខ្នារស", "ទ្រារស", "អង់", "ខ្នារ", "អំពិល", "ក្ងោក"],
+                    "កោះអណ្តែត": ["ចុងកោះ", "ក្បាលកោះ", "គគីរ", "ក្រូចសើច"],
+                    "មានជ័យ": ["ជ័យ", "ប៉ុនប៉ែន", "មាន់ដប់លើ", "មាន់ដប់ក្រោម", "វាល", "កោះគោ", "សំរោង"],
+                    "ផ្ទះកណ្តាល": ["ផ្ទះកណ្តាលលើ", "ផ្ទះកណ្តាលក្រោម", "ចុងបឹងក្រៅ", "អូរលាវ"],
+                    "ប្រាំយ៉ាម": ["ជីប្រាយ", "ក្តីថ្ក", "ប្រាំយ៉ាម", "ជើងដឹក"],
+                    "ព្រែកពោធិ": ["ព្រែកពោធិក្រោម", "ព្រែកពោធិលើ", "ព្រៃត្បេះ", "រកាទ្វារ", "សន្ទៃ", "ទូរីលើ", "ទូរីកណ្តាល", "ទូរីក្រោម", "ច្រស់", "ថ្មដា", "ប្រថ្នល់", "គោកចារ"],
+                    "ព្រែករំដេង": ["ព្រែករំដេងក", "ព្រែករំដេងខ", "ព្រែករំដេងគ", "តាកុច", "អូរឡេង", "ត្នោតក", "ត្នោតខ", "ព្រែកឪជ្រឹងក", "ព្រែកឪជ្រឹងខ", "ស្វាយតានាន់ក", "ស្វាយតានាន់ខ", "ក្សេរ", "កំពង់ព្នៅ", "តាង៉កថ្មី"],
+                    "ឫស្សីស្រុក": ["ត្នោតក្រោម", "ត្នោតលើ", "ព្រៃទទឹង", "ឫស្សីស្រុក"],
+                    "ស្វាយពោធិ": ["ទ្រា", "ខ្វិត", "ជីប៉ោ", "ទាហ៊ា", "ពោធិ៍", "ស្វាយ"],
+                    "ស្វាយខ្សាច់ភ្នំ": ["ស្វាយក្រោម", "ស្វាយត្បូង", "ស្វាយកណ្តាល", "ស្វាយលើ"],
+                    "ទងត្រឡាច": ["បឹងទីង", "ចន្លាត់ដៃ", "ខ្ទឹង", "ទងត្រឡាច"]
+                },
+                "ស្ទឹងត្រង់": { 
+                    "អារក្សត្នោត": ["អារក្សត្នោត", "កោះម្នាស់", "ល្វា", "គីឡូ១០", "បែកអន្លូង", "គីឡូ៧"], 
+                    "ហាន់ជ័យ": ["ហាន់ជ័យ", "ព្រែកបាក់"],
+                    "មេសាង": ["មេសាង", "អូរស្វាយ"],
+                    "ផ្អៅ": ["ផ្អៅ", "ទួលព្រះឃ្លាំង"],
+                    "ស្ទឹងត្រង់": ["ស្ទឹងត្រង់", "បឹងល្វា"],
+                    "ដងក្តារ": ["អូរពីរ", "សន្ទិចកើត", "សន្ទិចលិច", "តារៀម", "សន្ទិចកណ្តាល", "ស្រែរំដួល", "ថ្មី", "ហុងប្រម៉ា", "ស្តៅ", "ជ្រៃហាយ"],
+                    "ខ្ពបតាងួន": ["ព្រែកទក់", "វាលបំពង់", "ឈើទើ", "អន្លង់សំឡី", "អូររុន", "ខ្ពបតាងួន"],
+                    "មេសរជ្រៃ": ["ក្បាលអូរ", "អូរបេង", "ត្រពាំងឈូក", "បុសពោធិ", "អូរលើ"],
+                    "អូរម្លូ": ["ខ្ទួយទី១", "ខ្ទួយទី២", "ខ្ទួយទី៣", "ខ្ទួយទី៤", "អូរកាប់មាន់", "អូរប្រឡោះ", "ស្ពង់សាខាថ្មី", "ស្ពង់សាខាចាស់", "អូរឫស្សី", "អូរតាសេក", "សំរោង", "ប្រទង", "បិទធ្នូ"],
+                    "ពាមកោះស្នា": ["ដីលើ", "ពាមក្រៅ", "ពាមក្នុង", "ព្រែកសង្កែលិច", "ព្រែកសង្កែកើត", "កោះកណ្តាល", "ទួលរការ", "ដីដុះ", "ស្រែសង្កែ"],
+                    "ព្រះអណ្តូង": ["ព្រះអណ្តូងទី១", "ព្រះអណ្តូងទី២", "ព្រែកស្តី"],
+                    "ព្រែកបាក់": ["ព្រែកព្រះអង្គ", "ព្រែកបាក់", "ព្រែកកក់", "ព្រែករលួស"],
+                    "ព្រែកកក់": ["ព្រែកបារាំង", "អូរចក", "អូរប្រាំទី១", "អូរប្រាំទី២", "គីឡូ៣", "មាឃ៣", "បឹងកាចូត", "បឹងដែង", "35", "បឹងកេតក្រោម", "បឹងកេតលើ", "56", "អណ្តូងស្វាយ", "70", "ភ្នំមន្ទីរ", "ត្នោតតាសាយ", "ចេកជ្វា", "មាឃ ១", "មាឃ ២", "ទួលពោធិ", "ព្រះ", "អណ្តូងពេជ្រ", "ភ្នំអំពិល"],
+                    "សូភាស": ["អង្កោល", "សូភាស", "ស្រប", "ទ័ព", "ប៉ប្រក", "សំបូរ", "ដីក្រហម"],
+                    "ទួលព្រះឃ្លាំង": ["វត្ត", "តាមើង", "ដូនទេរ", "ធំ", "សំពៀងលើ", "សំពៀងក្រោម", "ថ្មី"],
+                    "ទួលសំបួរ": ["ទួលសំបួរ", "ពោន", "ស្រែអំពៅ", "វាលព្រះ"]
+                },
+                "កំពង់សៀម": {
+                    "អំពិល": ["ស្រឡៅ", "បន្ទាយថ្ម", "រមាស", "រលៀក", "ជើងគោក", "ជង្ហុក", "ក្រឡា", "អណ្តូងច្រុះ", "អំពិលលើ", "អំពិលក្រោម", "វាលស្បូវ", "ស្យា"],
+                    "ហាន់ជ័យ": ["មាន់ហើរ", "ហាន់ជ័យ", "ល្វាទេ", "ក្រូចសើច"],
+                    "កៀនជ្រៃ": ["កៀនជ្រៃក្នុង", "កៀនជ្រៃក្រៅ", "បឹងបបុះ", "ស្ពានថ្មី", "ព្រែកយួន", "ឥន្ទនេល"],
+                    "គគរ": ["កំពង់ក្របី", "ចំការសាមសិប", "គគរ១", "គគរ២"],
+                    "កោះមិត្ត": ["កោះប៉ែនក", "កោះប៉ែនខ", "កោះប៉ែនគ", "កំពង់ត្រុំក្រោម", "កំពង់ត្រុំលើ", "កោះព្រលូង", "ស្វាយជ្រំ", "កោះចាស់", "កោះដាច់"],
+                    "កោះរកា": ["ដំបងដែក", "កោះរកាក្នុង", "កោះរកាក្រៅ", "អូរឈ្លើង", "តាមាង", "ថ្មី"],
+                    "កោះគល់": ["កោះគល់"],
+                    "កោះសំរោង": ["ទី៦", "ទី៥", "ទី៤", "ទី៣", "ទី២", "ទី១", "ទី៨", "ទី៧"],
+                    "កោះទន្ទឹម": ["កោះប្រាក់ក្នុង", "កោះប្រាក់ក្រៅ", "កោះប្រាក់ក្រោម", "កោះប្រាក់លើ", "កោះកុក(ក)", "កោះកុក(ខ)"],
+                    "ក្រឡា": ["ត្រពាំងថ្ម", "ទួលពពេល", "ទួលបេង", "ស្តេចនន", "អណ្តូងពោធិ៍", "ត្រពាំងឫស្សី", "ត្រពាំងចារ", "ត្រពាំងត្រស់", "ត្រកួន", "អំពិលជ្រំ", "ថ្មី", "អង្គួញដី", "ត្រពាំងជ្រៃ"],
+                    "អូរស្វាយ": ["ត្រពាំងកក់", "ខែលជ័យ", "អូរស្វាយ", "អំពិលក្រញាញ់", "អន្លង់ស្នូក", "ព្រៃចក្រី", "អូរធ្នង់"],
+                    "រអាង": ["រអាងក្រោម", "រអាងលើ", "ថ្មគោល", "រមូល", "ពង្រ", "វាលខ្សាច់", "ទួលរកា", "ប្រសំ"],
+                    "រំចេក": ["រំលេច", "ថ្មី", "ឈើទាលស្រុតក្រោម", "ឈើទាលស្រុតលើ"],
+                    "ស្រក": ["ព្រៃគុយ", "ស្រក", "ល្ពាក", "តាម៉ៅ"],
+                    "ទ្រាន": ["ពោន", "ទួលចំបក់", "ច្រនៀង", "ច្រកស្តៅ", "ត្រពាំងតាសុខ", "ប្រថង", "ទ្រាន", "ប៉ែន", "ត្រពាំងអំពិល", "ទួលត្រាច", "តាខុង", "វាលក្រៀល"],
+                    "វិហារធំ": ["ពង្រ", "គោកគ្រាម", "គោកទទា", "វិហារ", "គងមហា", "អណ្តូងស្វាយ", "ព្រៃផ្តៅ", "ប្រាសាទ", "ក្តីបឹង"]
+                }
+            }
+        };
+
+        window.onload = function() {
+            const provinceSelect = document.getElementById('province');
+            provinceSelect.innerHTML = '<option value=""> ជ្រើសរើសរាជធានី / ខេត្ត </option>';
+            for (let prov in cambodiaData) {
+                let option = document.createElement('option');
+                option.value = prov;
+                option.textContent = prov;
+                provinceSelect.appendChild(option);
+            }
+            provinceSelect.value = "កំពង់ចាម";
+            loadDistricts();
+            loadStudentListDropdown();
+        };
+
+        function loadDistricts() {
+            const province = document.getElementById('province').value;
+            const districtSelect = document.getElementById('district');
+            const communeSelect = document.getElementById('commune');
+            const villageSelect = document.getElementById('village');
+
+            districtSelect.innerHTML = '<option value=""> ជ្រើសរើសស្រុក / ក្រុង / ខណ្ឌ </option>';
+            communeSelect.innerHTML = '<option value=""> សូមជ្រើសរើសស្រុក/ខណ្ឌមុនសិន </option>';
+            villageSelect.innerHTML = '<option value=""> សូមជ្រើសរើសឃុំ/សង្កាត់មុនសិន </option>';
+
+            if (province && cambodiaData[province]) {
+                for (let dist in cambodiaData[province]) {
+                    let option = document.createElement('option');
+                    option.value = dist;
+                    option.textContent = dist;
+                    districtSelect.appendChild(option);
+                }
+            }
+        }
+
+        function loadCommunes() {
+            const province = document.getElementById('province').value;
+            const district = document.getElementById('district').value;
+            const communeSelect = document.getElementById('commune');
+            const villageSelect = document.getElementById('village');
+
+            communeSelect.innerHTML = '<option value=""> ជ្រើសរើសឃុំ / សង្កាត់ </option>';
+            villageSelect.innerHTML = '<option value=""> សូមជ្រើសរើសឃុំ/សង្កាត់មុនសិន </option>';
+
+            if (province && district && cambodiaData[province][district]) {
+                for (let comm in cambodiaData[province][district]) {
+                    let option = document.createElement('option');
+                    option.value = comm;
+                    option.textContent = comm;
+                    communeSelect.appendChild(option);
+                }
+            }
+        }
+
+        function loadVillages() {
+            const province = document.getElementById('province').value;
+            const district = document.getElementById('district').value;
+            const commune = document.getElementById('commune').value;
+            const villageSelect = document.getElementById('village');
+
+            villageSelect.innerHTML = '<option value=""> ជ្រើសរើសភូមិ </option>';
+
+            if (province && district && commune && cambodiaData[province][district][commune]) {
+                let villages = cambodiaData[province][district][commune];
+                villages.forEach(vill => {
+                    let option = document.createElement('option');
+                    option.value = vill;
+                    option.textContent = vill;
+                    villageSelect.appendChild(option);
+                });
+            }
+        }
+
+        function loadStudentListDropdown() {
+            google.script.run
+                .withSuccessHandler(function(students) {
+                    const select = document.getElementById('updateStudentSelect');
+                    select.innerHTML = '<option value="">-- បញ្ចូលសិស្សថ្មី (ទម្រង់ទទេ) --</option>';
+                    students.forEach(function(stu) {
+                        let option = document.createElement('option');
+                        option.value = stu.id;
+                        option.textContent = `[ID: ${stu.id}] ${stu.lastName} ${stu.firstName}`;
+                        select.appendChild(option);
+                    });
+                })
+                .withFailureHandler(function(err) {
+                    console.error("Error loading students:", err.message);
+                })
+                .getAllStudents();
+        }
+
+        function onStudentSelectChange() {
+            const studentId = document.getElementById('updateStudentSelect').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const updateBtn = document.getElementById('updateBtn');
+            const deleteBtn = document.getElementById('deleteBtn');
+
+            if (!studentId) {
+                // Reset form for new entry
+                document.getElementById('studentForm').reset();
+                document.getElementById('province').value = "កំពង់ចាម";
+                loadDistricts();
+                submitBtn.style.display = "flex";
+                updateBtn.style.display = "none";
+                deleteBtn.style.display = "none";
+                return;
+            }
+
+            // Show loading or fetch student details
+            google.script.run
+                .withSuccessHandler(function(student) {
+                    if (student) {
+                        document.getElementById('firstName').value = student.firstName;
+                        document.getElementById('lastName').value = student.lastName;
+                        document.getElementById('province').value = student.province || "កំពង់ចាម";
+                        loadDistricts();
+                        document.getElementById('district').value = student.district;
+                        loadCommunes();
+                        document.getElementById('commune').value = student.commune;
+                        loadVillages();
+                        document.getElementById('village').value = student.village;
+                        document.getElementById('phone').value = student.phone;
+                        document.getElementById('network').value = student.network;
+
+                        submitBtn.style.display = "none";
+                        updateBtn.style.display = "flex";
+                        deleteBtn.style.display = "flex";
+                    }
+                })
+                .withFailureHandler(function(err) {
+                    showAlert(err.message, "error");
+                })
+                .getStudentById(studentId);
+        }
+
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            toggleLoading(true);
+
+            const formData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                province: document.getElementById('province').value,
+                district: document.getElementById('district').value,
+                commune: document.getElementById('commune').value,
+                village: document.getElementById('village').value,
+                phone: document.getElementById('phone').value,
+                network: document.getElementById('network').value
+            };
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    toggleLoading(false);
+                    showAlert("បានរក្សាទុកទិន្នន័យដោយជោគជ័យ!", "success");
+                    document.getElementById('studentForm').reset();
+                    document.getElementById('province').value = "កំពង់ចាម";
+                    loadDistricts();
+                    loadStudentListDropdown();
+                })
+                .withFailureHandler(function(err) {
+                    toggleLoading(false);
+                    showAlert(err.message, "error");
+                })
+                .saveStudent(formData);
+        }
+
+        function handleUpdate() {
+            const studentId = document.getElementById('updateStudentSelect').value;
+            if (!studentId) return;
+
+            toggleLoading(true);
+            const formData = {
+                id: studentId,
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                province: document.getElementById('province').value,
+                district: document.getElementById('district').value,
+                commune: document.getElementById('commune').value,
+                village: document.getElementById('village').value,
+                phone: document.getElementById('phone').value,
+                network: document.getElementById('network').value
+            };
+
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    toggleLoading(false);
+                    showAlert("បានកែប្រែទិន្នន័យដោយជោគជ័យ!", "success");
+                    loadStudentListDropdown();
+                })
+                .withFailureHandler(function(err) {
+                    toggleLoading(false);
+                    showAlert(err.message, "error");
+                })
+                .updateStudent(formData);
+        }
+
+        function handleDelete() {
+            const studentId = document.getElementById('updateStudentSelect').value;
+            if (!studentId) return;
+
+            if (!confirm("តើអ្នកពិតជាចង់លុបទិន្នន័យសិស្សនេះមែនទេ?")) return;
+
+            toggleLoading(true);
+            google.script.run
+                .withSuccessHandler(function(res) {
+                    toggleLoading(false);
+                    showAlert("បានលុបទិន្នន័យដោយជោគជ័យ!", "success");
+                    document.getElementById('studentForm').reset();
+                    document.getElementById('province').value = "កំពង់ចាម";
+                    loadDistricts();
+                    loadStudentListDropdown();
+                    
+                    // Reset buttons
+                    document.getElementById('submitBtn').style.display = "flex";
+                    document.getElementById('updateBtn').style.display = "none";
+                    document.getElementById('deleteBtn').style.display = "none";
+                })
+                .withFailureHandler(function(err) {
+                    toggleLoading(false);
+                    showAlert(err.message, "error");
+                })
+                .deleteStudent(studentId);
+        }
+
+        function toggleLoading(isLoading) {
+            const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('loadingSpinner');
+            if (isLoading) {
+                btnText.style.display = 'none';
+                spinner.style.display = 'block';
+            } else {
+                btnText.style.display = 'inline';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.textContent = message;
+            alertBox.style.display = 'block';
+            alertBox.className = type === 'success' ? 'alert-success' : 'alert-error';
+            setTimeout(() => {
+                alertBox.style.display = 'none';
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
